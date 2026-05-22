@@ -1,20 +1,20 @@
 # Todo List — Execução v1
 
 ## Sprint 1 (em andamento)
-- [ ] Criar estrutura de pastas do motor em Deno.
-- [ ] Configurar `deno.json` e padrões de lint/format/test.
-- [ ] Implementar contratos Zod v1 (entidades e eventos).
-- [ ] Implementar casos de uso: `create-session`, `start-session`, `stop-session`.
-- [ ] Garantir `seed` e `tick` lógico no núcleo da sessão.
-- [ ] Criar testes de contrato para payloads base.
-- [ ] Implementar resumo técnico de sessão no terminal (trades, volume, preço, rejeições).
+- [x] Criar estrutura de pastas do motor em Deno.
+- [x] Configurar `deno.json` e padrões de lint/format/test.
+- [x] Implementar contratos Zod v1 (entidades e eventos).
+- [x] Implementar casos de uso: `create-session`, `start-session`, `stop-session`.
+- [x] Garantir `seed` e `tick` lógico no núcleo da sessão.
+- [x] Criar testes de contrato para payloads base.
+- [x] Implementar resumo técnico de sessão no terminal (trades, volume, preço, rejeições).
 
 ## Sprint 2
-- [ ] Implementar loop principal de simulação por tick.
-- [ ] Implementar geração de ordens por participantes.
-- [ ] Implementar book simplificado com matching.
-- [ ] Persistir eventos append-only.
-- [ ] Gerar artefatos de análise (`events.jsonl`, `trades.csv`, `candles.csv`).
+- [x] Implementar loop principal de simulação por tick.
+- [x] Implementar geração de ordens por participantes.
+- [x] Implementar book simplificado com matching.
+- [x] Persistir eventos append-only.
+- [x] Gerar artefatos de análise (`events.jsonl`, `trades.csv`, `candles.csv`).
 
 ## Sprint 3
 - [ ] Refinar regras de market maker.
