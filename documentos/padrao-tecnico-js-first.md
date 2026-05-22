@@ -4,7 +4,7 @@
 Definir um padrão de desenvolvimento que mantenha o código simples de ler (JavaScript), sem abrir mão de segurança nos pontos críticos do domínio.
 
 Decisão:
-- Base do projeto em **JavaScript (Node.js)**.
+- Base do projeto em **JavaScript (Deno)**.
 - Tipagem adicionada **progressivamente**, só onde gera valor real.
 - Validação de entrada/saída em runtime com **Zod**.
 
@@ -70,6 +70,14 @@ Trade-off aceito:
 4. Toda entrada externa deve passar por schema.
 5. Mensagens de erro devem orientar correção (campo, valor recebido, valor esperado).
 
+## 5.1 Convenções de programação funcional (obrigatórias)
+1. Tratar coleções e objetos como imutáveis.
+2. Não usar métodos mutáveis em estado de domínio (ex.: `Array.push`, `Array.pop`, `Array.splice`, atribuição direta em objeto compartilhado).
+3. Para adicionar itens, sempre criar nova coleção (ex.: `novoArray = [...arrayAtual, item]`).
+4. Para atualizar objetos, sempre retornar nova referência (ex.: cópia rasa/profunda conforme necessidade).
+5. Funções de domínio devem ser puras: mesma entrada -> mesma saída, sem efeitos colaterais.
+6. Efeitos externos (I/O, relógio, random, rede, armazenamento) ficam em adapters/camada de aplicação.
+
 ---
 
 ## 6) Padrão de fronteiras (importante)
@@ -94,6 +102,7 @@ Fase 1 (MVP):
 - JavaScript puro no core.
 - Zod nos contratos de entrada/saída.
 - JSDoc nos módulos de domínio.
+- Regra funcional imutável aplicada no domínio inteiro.
 
 Fase 2:
 - Tipagem progressiva adicional em módulos críticos (book, matching, risco).
@@ -114,4 +123,4 @@ Fase 3 (se necessário):
 
 ## 9) Decisão oficial do projeto
 Para o MVP do simulador de mercado, o padrão oficial é:
-**JavaScript first + tipagem progressiva + validação de runtime com Zod.**
+**JavaScript first (Deno) + tipagem progressiva + validação de runtime com Zod + domínio funcional imutável.**

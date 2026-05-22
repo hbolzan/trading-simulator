@@ -158,12 +158,18 @@ Hipótese de trabalho:
 - Começar com regras simples e evoluir por camadas.
 - Padrão técnico do MVP: **JavaScript first com tipagem progressiva**.
 - Validação de contratos e entradas críticas com **Zod**.
+- Runtime oficial do MVP: **Deno**.
 - Interface visual totalmente desacoplada do motor por contratos externos (HTTP + eventos via WebSocket).
 - Dados históricos tratados como fatos imutáveis (append-only), com projeções/materialized views para leitura e performance.
 - Lógica de domínio em funções puras, separada de controllers/adapters e infraestrutura.
+- Regra de implementação: domínio com estruturas imutáveis; sem métodos mutáveis como `Array.push`.
 
 ## 11) Documentos de referência
 - Regras operacionais do mercado v1: `regras-mercado-v1.md`
 - Padrão técnico JS-first + tipagem progressiva: `padrao-tecnico-js-first.md`
 - Princípios arquiteturais: `principios-arquiteturais.md`
 - Contratos de dados v1: `contratos-dados-v1.md`
+- Stack tecnológica v1: `stack-tecnologica-v1.md`
+- Guia de estrutura de pastas v1: `guia-estrutura-pastas-v1.md`
+- Roadmap de execução v1: `roadmap-execucao-v1.md`
+- Todo list de execução v1: `todo-roadmap-v1.md`

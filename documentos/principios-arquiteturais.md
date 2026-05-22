@@ -31,6 +31,7 @@ Diretriz:
 - Nunca editar ou sobrescrever fatos históricos.
 - Se houve erro de domínio, registrar evento corretivo (não “apagar” passado).
 - Permitir reconstrução de estado via replay de eventos.
+- Em memória, tratar estado de domínio como imutável (sem mutações diretas em objetos/arrays compartilhados).
 
 Benefícios:
 - Auditabilidade.
@@ -46,6 +47,7 @@ Regra de ouro:
 - Regras de negócio vivem em funções puras (entrada -> saída sem efeitos colaterais).
 - Controllers/adapters apenas traduzem I/O (HTTP, WS, arquivo, banco) para comandos/eventos de domínio.
 - Infraestrutura não decide regra de mercado.
+- Métodos mutáveis como `Array.push` não são permitidos no estado de domínio.
 
 Estrutura conceitual sugerida:
 - `core/domain`: entidades, regras, validações de negócio, funções puras
