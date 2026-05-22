@@ -3,6 +3,9 @@ import { z } from '../../../deps.js';
 export const eventTypeSchema = z.enum([
   'SessionCreated',
   'SessionStarted',
+  'TickAdvanced',
+  'OrderSubmitted',
+  'TradeExecuted',
   'SessionStopped',
 ]);
 

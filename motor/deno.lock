@@ -3,6 +3,7 @@
   "specifiers": {
     "jsr:@std/assert@*": "1.0.18",
     "jsr:@std/internal@^1.0.12": "1.0.12",
+    "jsr:@std/path@1.0.8": "1.0.8",
     "npm:zod@*": "4.4.3"
   },
   "jsr": {
@@ -14,6 +15,9 @@
     },
     "@std/internal@1.0.12": {
       "integrity": "972a634fd5bc34b242024402972cd5143eac68d8dffaca5eaa4dba30ce17b027"
+    },
+    "@std/path@1.0.8": {
+      "integrity": "548fa456bb6a04d3c1a1e7477986b6cffbce95102d0bb447c67c4ee70e0364be"
     }
   },
   "npm": {

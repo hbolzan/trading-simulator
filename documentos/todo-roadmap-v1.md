@@ -10,11 +10,11 @@
 - [x] Implementar resumo técnico de sessão no terminal (trades, volume, preço, rejeições).
 
 ## Sprint 2
-- [ ] Implementar loop principal de simulação por tick.
-- [ ] Implementar geração de ordens por participantes.
-- [ ] Implementar book simplificado com matching.
-- [ ] Persistir eventos append-only.
-- [ ] Gerar artefatos de análise (`events.jsonl`, `trades.csv`, `candles.csv`).
+- [x] Implementar loop principal de simulação por tick.
+- [x] Implementar geração de ordens por participantes.
+- [x] Implementar book simplificado com matching.
+- [x] Persistir eventos append-only.
+- [x] Gerar artefatos de análise (`events.jsonl`, `trades.csv`, `candles.csv`).
 
 ## Sprint 3
 - [ ] Refinar regras de market maker.
