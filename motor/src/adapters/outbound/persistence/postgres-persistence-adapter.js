@@ -1,5 +1,13 @@
 import { Client } from 'jsr:@db/postgres@0.19.4';
 
+const BATCH_SIZE = 500;
+
+const chunkItems = (items, chunkSize) =>
+  Array.from(
+    { length: Math.ceil(items.length / chunkSize) },
+    (_, index) => items.slice(index * chunkSize, (index + 1) * chunkSize),
+  );
+
 const ensureSchema = async (client) => {
   await client.queryArray(`
     CREATE TABLE IF NOT EXISTS simulation_events (
@@ -43,7 +51,28 @@ const ensureSchema = async (client) => {
 };
 
 const persistEvents = async ({ client, events }) => {
-  for (const event of events) {
+  const batches = chunkItems(events, BATCH_SIZE);
+
+  for (const batch of batches) {
+    const placeholders = batch
+      .map(
+        (_, index) =>
+          `($${(index * 7) + 1}, $${(index * 7) + 2}, $${(index * 7) + 3}, $${(index * 7) + 4}, $${
+            (index * 7) + 5
+          }, $${(index * 7) + 6}, $${(index * 7) + 7}::jsonb)`,
+      )
+      .join(', ');
+
+    const values = batch.flatMap((event) => [
+      event.event_id,
+      event.session_id,
+      event.event_type,
+      event.tick,
+      event.occurred_at,
+      event.version,
+      JSON.stringify(event.payload),
+    ]);
+
     await client.queryArray(
       `
         INSERT INTO simulation_events (
@@ -55,22 +84,38 @@ const persistEvents = async ({ client, events }) => {
           version,
           payload
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb)
+        VALUES ${placeholders}
         ON CONFLICT (event_id) DO NOTHING
       `,
-      event.event_id,
-      event.session_id,
-      event.event_type,
-      event.tick,
-      event.occurred_at,
-      event.version,
-      JSON.stringify(event.payload),
+      values,
     );
   }
 };
 
 const persistTrades = async ({ client, trades }) => {
-  for (const trade of trades) {
+  const batches = chunkItems(trades, BATCH_SIZE);
+
+  for (const batch of batches) {
+    const placeholders = batch
+      .map(
+        (_, index) =>
+          `($${(index * 8) + 1}, $${(index * 8) + 2}, $${(index * 8) + 3}, $${(index * 8) + 4}, $${
+            (index * 8) + 5
+          }, $${(index * 8) + 6}, $${(index * 8) + 7}, $${(index * 8) + 8})`,
+      )
+      .join(', ');
+
+    const values = batch.flatMap((trade) => [
+      trade.trade_id,
+      trade.session_id,
+      trade.tick,
+      trade.price,
+      trade.quantity,
+      trade.aggressor_side,
+      trade.buy_order_id,
+      trade.sell_order_id,
+    ]);
+
     await client.queryArray(
       `
         INSERT INTO simulation_trades (
@@ -83,23 +128,42 @@ const persistTrades = async ({ client, trades }) => {
           buy_order_id,
           sell_order_id
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        VALUES ${placeholders}
         ON CONFLICT (trade_id) DO NOTHING
       `,
-      trade.trade_id,
-      trade.session_id,
-      trade.tick,
-      trade.price,
-      trade.quantity,
-      trade.aggressor_side,
-      trade.buy_order_id,
-      trade.sell_order_id,
+      values,
     );
   }
 };
 
 const persistCandles = async ({ client, candles }) => {
-  for (const candle of candles) {
+  const batches = chunkItems(candles, BATCH_SIZE);
+
+  for (const batch of batches) {
+    const placeholders = batch
+      .map(
+        (_, index) =>
+          `($${(index * 10) + 1}, $${(index * 10) + 2}, $${(index * 10) + 3}, $${
+            (index * 10) + 4
+          }, $${(index * 10) + 5}, $${(index * 10) + 6}, $${(index * 10) + 7}, $${
+            (index * 10) + 8
+          }, $${(index * 10) + 9}, $${(index * 10) + 10})`,
+      )
+      .join(', ');
+
+    const values = batch.flatMap((candle) => [
+      candle.candle_id,
+      candle.session_id,
+      candle.start_tick,
+      candle.end_tick,
+      candle.timeframe_ticks,
+      candle.open,
+      candle.high,
+      candle.low,
+      candle.close,
+      candle.volume,
+    ]);
+
     await client.queryArray(
       `
         INSERT INTO simulation_candles (
@@ -114,19 +178,10 @@ const persistCandles = async ({ client, candles }) => {
           close,
           volume
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ${placeholders}
         ON CONFLICT (candle_id) DO NOTHING
       `,
-      candle.candle_id,
-      candle.session_id,
-      candle.start_tick,
-      candle.end_tick,
-      candle.timeframe_ticks,
-      candle.open,
-      candle.high,
-      candle.low,
-      candle.close,
-      candle.volume,
+      values,
     );
   }
 };
@@ -140,9 +195,14 @@ export const createPostgresPersistenceAdapter = ({ databaseUrl }) => ({
 
     try {
       await ensureSchema(client);
+      await client.queryArray('BEGIN');
       await persistEvents({ client, events });
       await persistTrades({ client, trades });
       await persistCandles({ client, candles });
+      await client.queryArray('COMMIT');
+    } catch (error) {
+      await client.queryArray('ROLLBACK');
+      throw error;
     } finally {
       await client.end();
     }

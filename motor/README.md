@@ -18,6 +18,21 @@ Base inicial do motor em Deno com:
 - `deno task test`
 - `deno task test:contract`
 - `deno task dev`
+- `deno task dev:local`
+
+## Rodar local com `.env` compartilhado
+
+1. Na raiz do projeto, criar `.env` a partir do exemplo:
+
+   - `cp .env.example .env`
+
+2. Subir banco local com os mesmos parâmetros do `.env`:
+
+   - `docker compose up -d postgres`
+
+3. Rodar o motor usando esse mesmo `.env`:
+
+   - `cd motor && deno task dev:local`
 
 ## Configuração de persistência
 
@@ -31,6 +46,10 @@ Exemplos:
 - Apenas arquivos: `PERSISTENCE_MODE=file deno task dev`
 - Apenas Postgres: `PERSISTENCE_MODE=postgres DATABASE_URL="postgres://..." deno task dev`
 - Arquivos + Postgres: `PERSISTENCE_MODE=both DATABASE_URL="postgres://..." deno task dev`
+
+Com `.env` compartilhado (recomendado local):
+
+- `cd motor && deno task dev:local`
 
 ## Saídas do `deno task dev`
 
