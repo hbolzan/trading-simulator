@@ -1,0 +1,24 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Env
+.env
+.env.*
+!.env.example
+
+# Deno cache (project-local, if configured)
+.deno/
+
+# Build / temp
+dist/
+build/
+tmp/
+
+# Simulation artifacts
+motor/output/
