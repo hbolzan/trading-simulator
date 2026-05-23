@@ -5,6 +5,7 @@ export const eventTypeSchema = z.enum([
   'SessionStarted',
   'TickAdvanced',
   'OrderSubmitted',
+  'OrderRejected',
   'TradeExecuted',
   'SessionStopped',
 ]);

@@ -29,4 +29,7 @@ Deno.test('simulation with same seed must produce stable metrics', () => {
   assertEquals(firstRun.trades.length, secondRun.trades.length);
   assertEquals(firstRun.lastPrice, secondRun.lastPrice);
   assertEquals(firstRun.session.tick, secondRun.session.tick);
+  assertEquals(firstRun.rejectedOrdersCount, secondRun.rejectedOrdersCount);
+  assertEquals(firstRun.accountingConsistent, true);
+  assertEquals(secondRun.accountingConsistent, true);
 });

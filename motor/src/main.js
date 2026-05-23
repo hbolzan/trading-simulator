@@ -3,10 +3,17 @@ import { startSession } from './core/application/use-cases/start-session.use-cas
 import { stopSession } from './core/application/use-cases/stop-session.use-case.js';
 import { runSimulationUseCase } from './core/application/use-cases/run-simulation.use-case.js';
 import { renderSessionSummary } from './adapters/inbound/cli/render-session-summary.js';
-import { persistEventsAsJsonl } from './adapters/outbound/event-store/file-event-store.js';
-import { writeTradesCsv } from './adapters/outbound/projections-store/write-trades-csv.js';
-import { writeCandlesCsv } from './adapters/outbound/projections-store/write-candles-csv.js';
+import { createPersistenceAdapter } from './adapters/outbound/persistence/create-persistence-adapter.js';
+import { writeViewerHtml } from './adapters/outbound/projections-store/write-viewer-html.js';
 import { buildCandlesFromTrades } from './projections/builders/build-candles-from-trades.js';
+
+const persistenceMode = Deno.env.get('PERSISTENCE_MODE') ?? 'file';
+const databaseUrl = Deno.env.get('DATABASE_URL') ?? '';
+
+const persistenceAdapter = createPersistenceAdapter({
+  mode: persistenceMode,
+  databaseUrl,
+});
 
 const created = createSession({
   session_id: crypto.randomUUID(),
@@ -36,11 +43,6 @@ const allEvents = [
   ...stopped.events,
 ];
 
-const outputDirectory = `./output/${stopped.session.session_id}`;
-const eventsPath = `${outputDirectory}/events.jsonl`;
-const tradesPath = `${outputDirectory}/trades.csv`;
-const candlesPath = `${outputDirectory}/candles.csv`;
-
 const candles = buildCandlesFromTrades({
   sessionId: stopped.session.session_id,
   maxTicks: stopped.session.max_ticks,
@@ -49,17 +51,33 @@ const candles = buildCandlesFromTrades({
   initialPrice: 100,
 });
 
-await persistEventsAsJsonl({ events: allEvents, filePath: eventsPath });
-await writeTradesCsv({ trades: simulated.trades, filePath: tradesPath });
-await writeCandlesCsv({ candles, filePath: candlesPath });
+const persisted = await persistenceAdapter.persist({
+  sessionId: stopped.session.session_id,
+  events: allEvents,
+  trades: simulated.trades,
+  candles,
+});
+
+const viewerPath = `./output/${stopped.session.session_id}/viewer.html`;
+
+await writeViewerHtml({
+  session: stopped.session,
+  candles,
+  ordersCount: simulated.ordersCount,
+  rejectedOrdersCount: simulated.rejectedOrdersCount,
+  tradesCount: simulated.trades.length,
+  filePath: viewerPath,
+});
 
 console.log(
   renderSessionSummary(stopped.session, allEvents, {
     ordersCount: simulated.ordersCount,
+    rejectedOrdersCount: simulated.rejectedOrdersCount,
     tradesCount: simulated.trades.length,
     lastPrice: simulated.lastPrice,
-    eventsPath,
-    tradesPath,
-    candlesPath,
+    eventsPath: persisted.eventsPath,
+    tradesPath: persisted.tradesPath,
+    candlesPath: persisted.candlesPath,
+    viewerPath,
   }),
 );
