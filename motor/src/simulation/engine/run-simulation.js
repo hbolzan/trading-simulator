@@ -52,27 +52,23 @@ const generateParticipant = ({ seedState }) => {
 };
 
 const generateParticipants = ({ count, seed }) => {
-  const generation = Array.from({ length: count }).reduce(
-    (accumulator) => {
-      const created = generateParticipant({
-        seedState: accumulator.seed,
-      });
+  let nextSeed = seed;
+  const participants = [];
 
-      return {
-        participants: [...accumulator.participants, created.participant],
-        seed: created.nextSeed,
-      };
-    },
-    { participants: [], seed },
-  );
+  for (let index = 0; index < count; index += 1) {
+    const created = generateParticipant({
+      seedState: nextSeed,
+    });
 
-  const validatedParticipants = participantsSchema.parse(
-    generation.participants,
-  );
+    participants[participants.length] = created.participant;
+    nextSeed = created.nextSeed;
+  }
+
+  const validatedParticipants = participantsSchema.parse(participants);
 
   return {
     participants: validatedParticipants,
-    nextSeed: generation.seed,
+    nextSeed,
   };
 };
 
@@ -113,6 +109,165 @@ const createOrderFromDecision = ({
   };
 };
 
+const participantLedgerFromParticipants = (participants) => {
+  const ledger = new Map();
+
+  for (const participant of participants) {
+    const initialPosition = participant.type === 'market_maker'
+      ? 200
+      : participant.type === 'institutional'
+      ? 50
+      : 0;
+
+    ledger.set(participant.participant_id, {
+      participant_id: participant.participant_id,
+      cash: participant.capital,
+      position: initialPosition,
+    });
+  }
+
+  return ledger;
+};
+
+const canSubmitOrder = ({ account, order }) => {
+  if (order.side === 'buy') {
+    return account.cash >= order.price * order.quantity;
+  }
+
+  return account.position >= order.quantity;
+};
+
+const getLedgerAccount = (ledger, participantId) => ledger.get(participantId);
+
+const setLedgerAccount = (ledger, participantId, nextAccount) => {
+  ledger.set(participantId, nextAccount);
+};
+
+const reserveForOrder = ({ ledger, order }) => {
+  const account = getLedgerAccount(ledger, order.participant_id);
+
+  if (order.side === 'buy') {
+    setLedgerAccount(ledger, order.participant_id, {
+      ...account,
+      cash: account.cash - (order.price * order.quantity),
+    });
+    return;
+  }
+
+  setLedgerAccount(ledger, order.participant_id, {
+    ...account,
+    position: account.position - order.quantity,
+  });
+};
+
+const updateOpenOrderEntry = (openOrders, order, originalOrder) => {
+  openOrders.set(order.order_id, {
+    order,
+    originalOrder,
+  });
+};
+
+const settleTradeForOrder = ({ ledger, openOrderEntry, trade, side }) => {
+  const participantId = openOrderEntry.order.participant_id;
+  const account = getLedgerAccount(ledger, participantId);
+  const tradedQuantity = trade.quantity;
+
+  if (side === 'buy') {
+    const reservedAtOrderPrice = openOrderEntry.originalOrder.price * tradedQuantity;
+    const executedAtTradePrice = trade.price * tradedQuantity;
+    const refund = reservedAtOrderPrice - executedAtTradePrice;
+
+    setLedgerAccount(ledger, participantId, {
+      ...account,
+      cash: account.cash + refund,
+      position: account.position + tradedQuantity,
+    });
+    return;
+  }
+
+  setLedgerAccount(ledger, participantId, {
+    ...account,
+    cash: account.cash + (trade.price * tradedQuantity),
+  });
+};
+
+const settleTrades = ({ ledger, openOrders, trades }) => {
+  for (const trade of trades) {
+    const buyEntry = openOrders.get(trade.buy_order_id);
+    const sellEntry = openOrders.get(trade.sell_order_id);
+
+    settleTradeForOrder({
+      ledger,
+      openOrderEntry: buyEntry,
+      trade,
+      side: 'buy',
+    });
+
+    settleTradeForOrder({
+      ledger,
+      openOrderEntry: sellEntry,
+      trade,
+      side: 'sell',
+    });
+  }
+};
+
+const releaseReservationsForRemovedOrders = ({ ledger, openOrders, activeOrderIds }) => {
+  for (const [orderId, entry] of openOrders.entries()) {
+    if (activeOrderIds.has(orderId)) {
+      continue;
+    }
+
+    const account = getLedgerAccount(ledger, entry.order.participant_id);
+    const remainingQuantity = entry.order.remaining_quantity;
+
+    if (entry.order.side === 'buy') {
+      setLedgerAccount(ledger, entry.order.participant_id, {
+        ...account,
+        cash: account.cash + (remainingQuantity * entry.originalOrder.price),
+      });
+      continue;
+    }
+
+    setLedgerAccount(ledger, entry.order.participant_id, {
+      ...account,
+      position: account.position + remainingQuantity,
+    });
+  }
+};
+
+const rebuildOpenOrders = ({ previousOpenOrders, book }) => {
+  const activeOrders = [...book.bids, ...book.asks];
+  const nextOpenOrders = new Map();
+
+  for (const order of activeOrders) {
+    const previous = previousOpenOrders.get(order.order_id);
+    const originalOrder = previous ? previous.originalOrder : order;
+    updateOpenOrderEntry(nextOpenOrders, order, originalOrder);
+  }
+
+  return nextOpenOrders;
+};
+
+const validateAccounting = (ledger) =>
+  Array.from(ledger.values()).every((account) => account.cash >= 0 && account.position >= 0);
+
+const appendEvent = (events, event) => {
+  events[events.length] = event;
+};
+
+const appendEvents = (events, additionalEvents) => {
+  for (const event of additionalEvents) {
+    events[events.length] = event;
+  }
+};
+
+const appendTrades = (trades, additionalTrades) => {
+  for (const trade of additionalTrades) {
+    trades[trades.length] = trade;
+  }
+};
+
 export const runSimulation = ({ session, occurredAt, config }) => {
   const simulationConfig = safeConfig(config);
 
@@ -121,19 +276,20 @@ export const runSimulation = ({ session, occurredAt, config }) => {
     seed: session.seed,
   });
 
-  const simulationState = {
-    seed: participantsResult.nextSeed,
-    participants: participantsResult.participants,
-    events: [],
-    book: createEmptyBook(simulationConfig.initialPrice),
-    trades: [],
-    ordersCount: 0,
-    sequence: 0,
-  };
+  const participants = participantsResult.participants;
+  const events = [];
+  const trades = [];
 
-  const finalState = Array.from({ length: session.max_ticks }).reduce((accumulator, _, offset) => {
-    const tick = offset + 1;
+  let seed = participantsResult.nextSeed;
+  let book = createEmptyBook(simulationConfig.initialPrice);
+  let ordersCount = 0;
+  let rejectedOrdersCount = 0;
+  let sequence = 0;
 
+  const participantLedger = participantLedgerFromParticipants(participants);
+  let openOrders = new Map();
+
+  for (let tick = 1; tick <= session.max_ticks; tick += 1) {
     const tickEvent = buildEvent({
       eventType: 'TickAdvanced',
       sessionId: session.session_id,
@@ -142,31 +298,64 @@ export const runSimulation = ({ session, occurredAt, config }) => {
       payload: { tick },
     });
 
-    const tickInitial = {
-      ...accumulator,
-      events: [...accumulator.events, tickEvent],
-    };
+    appendEvent(events, tickEvent);
 
-    return tickInitial.participants.reduce((tickAccumulator, participant) => {
-      const randomDecision = nextRandom(tickAccumulator.seed);
+    for (const participant of participants) {
+      const randomDecision = nextRandom(seed);
+      seed = randomDecision.nextSeed;
+
       const shouldSubmitOrder = randomDecision.value < participant.activity_level;
-
       if (!shouldSubmitOrder) {
-        return {
-          ...tickAccumulator,
-          seed: randomDecision.nextSeed,
-        };
+        continue;
       }
 
       const createdOrder = createOrderFromDecision({
         session,
         participant,
         tick,
-        currentPrice: tickAccumulator.book.last_price,
+        currentPrice: book.last_price,
         tickSize: simulationConfig.tickSize,
-        randomSeed: randomDecision.nextSeed,
-        sequence: tickAccumulator.sequence + 1,
+        randomSeed: seed,
+        sequence: sequence + 1,
       });
+
+      seed = createdOrder.nextSeed;
+      sequence += 1;
+
+      const participantAccount = getLedgerAccount(
+        participantLedger,
+        createdOrder.order.participant_id,
+      );
+
+      if (!canSubmitOrder({ account: participantAccount, order: createdOrder.order })) {
+        const rejectedEvent = buildEvent({
+          eventType: 'OrderRejected',
+          sessionId: session.session_id,
+          tick,
+          occurredAt,
+          payload: {
+            order_id: createdOrder.order.order_id,
+            participant_id: createdOrder.order.participant_id,
+            reason: createdOrder.order.side === 'buy'
+              ? 'INSUFFICIENT_CASH'
+              : 'INSUFFICIENT_POSITION',
+            side: createdOrder.order.side,
+            price: createdOrder.order.price,
+            quantity: createdOrder.order.quantity,
+          },
+        });
+
+        rejectedOrdersCount += 1;
+        appendEvent(events, rejectedEvent);
+        continue;
+      }
+
+      reserveForOrder({
+        ledger: participantLedger,
+        order: createdOrder.order,
+      });
+
+      updateOpenOrderEntry(openOrders, createdOrder.order, createdOrder.order);
 
       const orderEvent = buildEvent({
         eventType: 'OrderSubmitted',
@@ -182,9 +371,32 @@ export const runSimulation = ({ session, occurredAt, config }) => {
         },
       });
 
+      appendEvent(events, orderEvent);
+
       const processed = processOrder({
-        book: tickAccumulator.book,
+        book,
         incomingOrder: createdOrder.order,
+      });
+
+      settleTrades({
+        ledger: participantLedger,
+        openOrders,
+        trades: processed.trades,
+      });
+
+      const activeOrderIds = new Set(
+        [...processed.book.bids, ...processed.book.asks].map((order) => order.order_id),
+      );
+
+      releaseReservationsForRemovedOrders({
+        ledger: participantLedger,
+        openOrders,
+        activeOrderIds,
+      });
+
+      openOrders = rebuildOpenOrders({
+        previousOpenOrders: openOrders,
+        book: processed.book,
       });
 
       const tradeEvents = processed.trades.map((trade) =>
@@ -202,30 +414,30 @@ export const runSimulation = ({ session, occurredAt, config }) => {
         })
       );
 
-      return {
-        ...tickAccumulator,
-        seed: createdOrder.nextSeed,
-        sequence: tickAccumulator.sequence + 1,
-        book: processed.book,
-        events: [...tickAccumulator.events, orderEvent, ...tradeEvents],
-        trades: [...tickAccumulator.trades, ...processed.trades],
-        ordersCount: tickAccumulator.ordersCount + 1,
-      };
-    }, tickInitial);
-  }, simulationState);
+      appendEvents(events, tradeEvents);
+      appendTrades(trades, processed.trades);
 
-  const validatedTrades = tradesSchema.parse(finalState.trades);
+      book = processed.book;
+      ordersCount += 1;
+    }
+  }
+
+  const validatedTrades = tradesSchema.parse(trades);
+  const accountingConsistent = validateAccounting(participantLedger);
 
   return {
     session: {
       ...session,
       tick: session.max_ticks,
     },
-    events: finalState.events,
+    events,
     trades: validatedTrades,
-    participants: finalState.participants,
-    ordersCount: finalState.ordersCount,
-    lastPrice: finalState.book.last_price,
-    book: finalState.book,
+    participants,
+    ordersCount,
+    rejectedOrdersCount,
+    lastPrice: book.last_price,
+    book,
+    participantLedger: Object.fromEntries(participantLedger.entries()),
+    accountingConsistent,
   };
 };

@@ -5,6 +5,7 @@ export const renderSessionSummary = (session, events, details = {}) => {
   const sessionStartedCount = formatEventTypeCount(events, 'SessionStarted');
   const sessionStoppedCount = formatEventTypeCount(events, 'SessionStopped');
   const orderSubmittedCount = formatEventTypeCount(events, 'OrderSubmitted');
+  const orderRejectedCount = formatEventTypeCount(events, 'OrderRejected');
   const tradeExecutedCount = formatEventTypeCount(events, 'TradeExecuted');
 
   return [
@@ -18,10 +19,12 @@ export const renderSessionSummary = (session, events, details = {}) => {
     `session_started_events: ${sessionStartedCount}`,
     `session_stopped_events: ${sessionStoppedCount}`,
     `orders_submitted: ${details.ordersCount ?? orderSubmittedCount}`,
+    `orders_rejected: ${details.rejectedOrdersCount ?? orderRejectedCount}`,
     `trades_executed: ${details.tradesCount ?? tradeExecutedCount}`,
     `last_price: ${details.lastPrice ?? 'n/a'}`,
     `events_jsonl: ${details.eventsPath ?? 'n/a'}`,
     `trades_csv: ${details.tradesPath ?? 'n/a'}`,
     `candles_csv: ${details.candlesPath ?? 'n/a'}`,
+    `viewer_html: ${details.viewerPath ?? 'n/a'}`,
   ].join('\n');
 };

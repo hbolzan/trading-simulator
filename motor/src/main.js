@@ -4,6 +4,7 @@ import { stopSession } from './core/application/use-cases/stop-session.use-case.
 import { runSimulationUseCase } from './core/application/use-cases/run-simulation.use-case.js';
 import { renderSessionSummary } from './adapters/inbound/cli/render-session-summary.js';
 import { createPersistenceAdapter } from './adapters/outbound/persistence/create-persistence-adapter.js';
+import { writeViewerHtml } from './adapters/outbound/projections-store/write-viewer-html.js';
 import { buildCandlesFromTrades } from './projections/builders/build-candles-from-trades.js';
 
 const persistenceMode = Deno.env.get('PERSISTENCE_MODE') ?? 'file';
@@ -57,13 +58,26 @@ const persisted = await persistenceAdapter.persist({
   candles,
 });
 
+const viewerPath = `./output/${stopped.session.session_id}/viewer.html`;
+
+await writeViewerHtml({
+  session: stopped.session,
+  candles,
+  ordersCount: simulated.ordersCount,
+  rejectedOrdersCount: simulated.rejectedOrdersCount,
+  tradesCount: simulated.trades.length,
+  filePath: viewerPath,
+});
+
 console.log(
   renderSessionSummary(stopped.session, allEvents, {
     ordersCount: simulated.ordersCount,
+    rejectedOrdersCount: simulated.rejectedOrdersCount,
     tradesCount: simulated.trades.length,
     lastPrice: simulated.lastPrice,
     eventsPath: persisted.eventsPath,
     tradesPath: persisted.tradesPath,
     candlesPath: persisted.candlesPath,
+    viewerPath,
   }),
 );

@@ -18,9 +18,9 @@
 
 ## Sprint 3
 - [ ] Refinar regras de market maker.
-- [ ] Adicionar validações de risco/rejeição de ordens.
-- [ ] Estabilizar consistência contábil por sessão.
-- [ ] Entregar viewer offline inicial (HTML estático por sessão).
+- [x] Adicionar validações de risco/rejeição de ordens.
+- [x] Estabilizar consistência contábil por sessão.
+- [x] Entregar viewer offline inicial (HTML estático por sessão).
 
 ## Sprint 4
 - [ ] Implementar projeções materializadas (ticker/candles/posição).
