@@ -23,8 +23,8 @@
 - [x] Entregar viewer offline inicial (HTML estático por sessão).
 
 ## Sprint 4
-- [ ] Implementar projeções materializadas (ticker/candles/posição).
-- [ ] Implementar replay determinístico de sessão.
+- [x] Implementar projeções materializadas (ticker/candles/posição).
+- [x] Implementar replay determinístico de sessão.
 
 ## Sprint 5
 - [ ] Expor API HTTP de sessão (comando/consulta).
