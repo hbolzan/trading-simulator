@@ -17,7 +17,7 @@
 - [x] Gerar artefatos de análise (`events.jsonl`, `trades.csv`, `candles.csv`).
 
 ## Sprint 3
-- [ ] Refinar regras de market maker.
+- [x] Refinar regras de market maker.
 - [x] Adicionar validações de risco/rejeição de ordens.
 - [x] Estabilizar consistência contábil por sessão.
 - [x] Entregar viewer offline inicial (HTML estático por sessão).
