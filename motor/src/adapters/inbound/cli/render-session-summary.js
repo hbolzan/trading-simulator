@@ -26,5 +26,9 @@ export const renderSessionSummary = (session, events, details = {}) => {
     `trades_csv: ${details.tradesPath ?? 'n/a'}`,
     `candles_csv: ${details.candlesPath ?? 'n/a'}`,
     `viewer_html: ${details.viewerPath ?? 'n/a'}`,
+    `ticker_snapshot_json: ${details.tickerSnapshotPath ?? 'n/a'}`,
+    `positions_json: ${details.positionsPath ?? 'n/a'}`,
+    `replay_summary_json: ${details.replaySummaryPath ?? 'n/a'}`,
+    `replay_deterministic_match: ${details.replayDeterministicMatch ?? 'n/a'}`,
   ].join('\n');
 };
