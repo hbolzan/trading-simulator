@@ -1,4 +1,4 @@
-# Motor do Simulador (Sprint 5)
+# Motor do Simulador (Sprint 6)
 
 Base inicial do motor em Deno com:
 
@@ -13,7 +13,8 @@ Base inicial do motor em Deno com:
 - resumo técnico via CLI,
 - API HTTP de sessão (comando/consulta),
 - stream WebSocket de eventos,
-- envelope de erro e telemetria básica.
+- envelope de erro e telemetria básica,
+- UI mínima desacoplada (candles + estado da sessão) consumindo apenas API.
 
 ## Comandos
 
@@ -41,6 +42,7 @@ Exemplo rápido:
 - Subir API: `cd motor && deno task api:dev:local`
 - Criar sessão:
   `curl -X POST http://localhost:8787/sessions -H 'content-type: application/json' -d '{"seed":42,"maxTicks":120}'`
+- Abrir UI mínima: `http://localhost:8787/ui`
 
 ## Rodar local com `.env` compartilhado
 
