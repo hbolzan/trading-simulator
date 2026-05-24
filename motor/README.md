@@ -1,4 +1,4 @@
-# Motor do Simulador (Sprint 2)
+# Motor do Simulador (Sprint 5)
 
 Base inicial do motor em Deno com:
 
@@ -10,7 +10,10 @@ Base inicial do motor em Deno com:
 - book simplificado com matching,
 - persistência append-only de eventos (`jsonl`),
 - export de trades (`csv`),
-- resumo técnico via CLI.
+- resumo técnico via CLI,
+- API HTTP de sessão (comando/consulta),
+- stream WebSocket de eventos,
+- envelope de erro e telemetria básica.
 
 ## Comandos
 
@@ -19,6 +22,25 @@ Base inicial do motor em Deno com:
 - `deno task test:contract`
 - `deno task dev`
 - `deno task dev:local`
+- `deno task api:dev`
+- `deno task api:dev:local`
+
+## Endpoints da API (Sprint 5)
+
+- `POST /sessions` cria e executa uma sessão completa.
+- `GET /sessions/:sessionId` consulta estado e métricas da sessão.
+- `GET /sessions/:sessionId/ticker` consulta snapshot de ticker.
+- `GET /sessions/:sessionId/candles?tf=10` consulta candles.
+- `GET /sessions/:sessionId/participants/:participantId/position` consulta posição/PnL de
+  participante.
+- `GET /telemetry` consulta telemetria básica de requisições.
+- `GET /ws/sessions/:sessionId` abre stream de eventos via WebSocket.
+
+Exemplo rápido:
+
+- Subir API: `cd motor && deno task api:dev:local`
+- Criar sessão:
+  `curl -X POST http://localhost:8787/sessions -H 'content-type: application/json' -d '{"seed":42,"maxTicks":120}'`
 
 ## Rodar local com `.env` compartilhado
 

@@ -4,7 +4,9 @@
     "test": "deno test",
     "test:contract": "deno test tests/contract",
     "dev": "deno run --allow-read --allow-write --allow-env --allow-net src/main.js",
-    "dev:local": "deno run --env-file=../.env --allow-read --allow-write --allow-env --allow-net src/main.js"
+    "dev:local": "deno run --env-file=../.env --allow-read --allow-write --allow-env --allow-net src/main.js",
+    "api:dev": "deno run --allow-read --allow-write --allow-env --allow-net src/api-main.js",
+    "api:dev:local": "deno run --env-file=../.env --allow-read --allow-write --allow-env --allow-net src/api-main.js"
   },
   "fmt": {
     "lineWidth": 100,

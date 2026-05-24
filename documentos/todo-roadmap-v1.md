@@ -27,9 +27,9 @@
 - [x] Implementar replay determinístico de sessão.
 
 ## Sprint 5
-- [ ] Expor API HTTP de sessão (comando/consulta).
-- [ ] Expor stream WebSocket de eventos.
-- [ ] Padronizar envelope de erro e telemetria básica.
+- [x] Expor API HTTP de sessão (comando/consulta).
+- [x] Expor stream WebSocket de eventos.
+- [x] Padronizar envelope de erro e telemetria básica.
 
 ## Sprint 6
 - [ ] Entregar UI mínima desacoplada com candles e estado de sessão.
