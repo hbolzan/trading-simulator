@@ -1,5 +1,7 @@
 import { createPersistenceAdapter } from '../../outbound/persistence/create-persistence-adapter.js';
 import { executeSession } from '../../../core/application/use-cases/execute-session.use-case.js';
+import { buildUiIndexHtml } from './ui/index-html.js';
+import { uiAppJs } from './ui/app-js.js';
 
 const sessions = new Map();
 const sessionEvents = new Map();
@@ -16,6 +18,22 @@ const jsonResponse = (payload, status = 200) =>
     status,
     headers: {
       'content-type': 'application/json; charset=utf-8',
+    },
+  });
+
+const htmlResponse = (html, status = 200) =>
+  new Response(html, {
+    status,
+    headers: {
+      'content-type': 'text/html; charset=utf-8',
+    },
+  });
+
+const javascriptResponse = (sourceCode, status = 200) =>
+  new Response(sourceCode, {
+    status,
+    headers: {
+      'content-type': 'text/javascript; charset=utf-8',
     },
   });
 
@@ -260,6 +278,18 @@ const routeRequest = ({ request, traceId }) => {
   const pathParts = getPathParts(request.url);
   const [resource, firstId, secondResource, secondId, thirdResource] = pathParts;
 
+  if (request.method === 'GET' && !resource) {
+    return htmlResponse(buildUiIndexHtml());
+  }
+
+  if (request.method === 'GET' && resource === 'ui' && !firstId) {
+    return htmlResponse(buildUiIndexHtml());
+  }
+
+  if (request.method === 'GET' && resource === 'ui' && firstId === 'app.js') {
+    return javascriptResponse(uiAppJs);
+  }
+
   if (request.method === 'POST' && resource === 'sessions' && !firstId) {
     return handleCreateSessionAndStart({ request, traceId });
   }
@@ -309,13 +339,13 @@ const routeRequest = ({ request, traceId }) => {
 };
 
 export const startSessionApiServer = ({ port = 8787 }) => {
-  Deno.serve({ port }, (request) => {
+  Deno.serve({ port }, async (request) => {
     const traceId = crypto.randomUUID();
     const startedAt = performance.now();
     const path = new URL(request.url).pathname;
 
     try {
-      const response = routeRequest({ request, traceId });
+      const response = await routeRequest({ request, traceId });
 
       telemetry.requests_total += 1;
       telemetry.requests_by_path[path] = (telemetry.requests_by_path[path] ?? 0) + 1;
